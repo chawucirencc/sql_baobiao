@@ -1,4 +1,4 @@
--- 收付款单
+-- 收付款单(ACC31)
 -- 主表
 SELECT A.F_RPID, DATE_FORMAT(A.F_DATE, "%%Y-%%m-%%d") AS 日期, A.F_DEPTID, A.F_CURRENCY, A.F_EXRATE, A.F_SERVICETYPE, 
         A.F_WORKNO, A.F_HUBID, A.F_CONTRACTNO, A.F_DEALINGSNAME, A.F_AMT, A.F_USAGE, A.F_REMARK, A.F_EMPNAME,  
@@ -40,7 +40,7 @@ LEFT JOIN DB_ORGS C ON A.F_DEALINGSNAME = C.F_NAME
 WHERE A.F_RPID = :ID 
 /*------------------------------------------------------------------------------------------------------------*/
 
---费用报销单(后勤采购)
+--费用报销单(后勤采购)(ACC32)
 SELECT A.F_ARPID, A.F_DATE, A.F_SERVICETYPE, A.F_CCNAME, A.F_CURRENCY, A.F_EMPNAME, 
         A.F_AMT, A.F_REMARK, B.F_PURBILLID, A.F_PLANID 预算单号 
 FROM ACC_ARPBILLHEAD A 
@@ -51,7 +51,7 @@ WHERE A.F_ARPID=:ID
 GROUP BY E.F_LOG 
 ORDER BY E.F_MSGID 
 /*------------------------------------------------------------------------------------------------------------*/
---个人费用报销(明细)
+--个人费用报销(明细)(ACC33, ACC34)
 SELECT A.F_ARPID 单据号, DATE_FORMAT(A.F_DATE, "%%Y-%%m-%%d") 业务日期, A.F_SERVICETYPE 发货代码, A.F_CCNAME 部门, A.F_CURRENCY 币别,  
         A.F_EMPNAME 申请人, D.F_SNAME 供应商, A.F_PURBILLID 申请单号, A.F_PLANID 预算单号, FORMAT(SUM(B.F_AMT), 2) 金额, 
         A.F_REMARK 备注, A.F_SOURCETYPE 来源单据类型ID, IF(A.F_SOURCETYPE="5", "费用报销", "其他") 来源单据类型,  
@@ -89,7 +89,7 @@ WHERE A.F_CADATE >= :START_DATE AND A.F_CADATE <= DATE_ADD(:END_DATE, INTERVAL 1
 
 
 WHERE A.F_CADATE >= "2018-11-19" AND A.F_CADATE <= DATE_ADD("2018-11-20", INTERVAL 1 DAY)
-WHERE C.F_SUBJECTCODE = :ID 1403
+WHERE C.F_SUBJECTCODE = :ID 1403 
 WHERE B.F_ID = 20000016 
 ------------------------
 
@@ -97,3 +97,45 @@ SELECT *
 FROM ACC_CAHEAD A 
 LEFT JOIN BAS_SUBJECTS B ON A.F_COID = B.F_SUBJECTCODE
 WHERE B.F_SUBJECTCODE = 1002.01
+
+/*------------------------------------------------------------------------------------------------------------*/
+-- 采购订单(CG02)
+-- 主表 
+-- 这里遇到了一个比较奇怪的bug，主要是自己没有理解清楚多条记录和表头的关系，两者用不同的逻辑和方法。
+-- 原表暂时不用变。
+SELECT A.F_SUPPLIER AS 供应商, DATE_FORMAT(A.F_CREATETIME, '%%Y-%%m-%%d') AS 下单时间, 
+(CASE 
+WHEN A.F_SERVICETYPE='01' THEN '佛山市博亿达进出口有限公司' 
+WHEN A.F_SERVICETYPE='02' THEN '佛山市万通亿达进出口有限公司' 
+WHEN A.F_SERVICETYPE='03' THEN '广东博航建材有限公司' 
+WHEN A.F_SERVICETYPE='04' THEN '佛山博亿达供应链有限公司' END) AS 退税公司中文名, 
+A.F_CONTRACTNO AS 合同编号 
+FROM PUR_ORDERHEAD A 
+WHERE A.F_BILLID = :ID
+
+-- -- -- -- -- -- -- -- - --  - - - - - --
+SELECT A.F_SUPPLIER AS 供应商, C.F_GOODSTYPENAME AS 物料名称, C.F_GOODSCODE AS 物品编码, C.F_GOODSMODEL AS 规格, 
+        B.F_QTY AS 采购数量, B.F_RECVQTY AS 已收到数量, B.F_REFUNIT AS 单位, B.F_PRICE AS 单价,  
+        C.F_GOODSPACKAGEMODEL AS 包装规格, B.F_AMT AS 金额, A.F_REMARK AS 备注, C.F_PY AS 助记码
+FROM PUR_ORDERHEAD A  
+LEFT JOIN PUR_ORDERBODY B ON B.F_BILLID=A.F_BILLID 
+LEFT JOIN BAS_GOODS C ON C.F_GOODSID=B.F_GOODSID 
+WHERE A.F_BILLID=32201910190008 
+
+SELECT A.F_SUPPLIER AS 供应商, C.F_GOODSMODEL AS 规格,C.F_GOODSTYPENAME AS 物料名称, C.F_GOODSCODE AS 物品编码, 
+        B.F_AMT AS 金额,CAST((B.F_PRICE*B.F_EXRATE) AS DECIMAL(10,2)) AS 单价, IF(A.F_PAYTYPE='0', '月结', '票结') AS 结算方式, 
+   SUM(CEILING(B.F_QTY*IFNULL(C.F_GOODSPACKAGEQTY,1)/C.F_GOODSPACKAGEUNITEXRATE)) AS 采购数量,  
+   C.F_HSCODE AS HS编码,C.F_PY AS 助记码, substr(C.F_GOODSPACKAGEUNIT,1,instr(C.F_GOODSPACKAGEUNIT,'(')-1) AS 件数单位, 
+   C.F_GOODSPACKAGEMODEL AS 包装规格  
+   FROM PUR_ORDERHEAD A  
+   LEFT JOIN PUR_ORDERBODY B ON B.F_BILLID=A.F_BILLID 
+  LEFT JOIN BAS_GOODS C ON C.F_GOODSID=B.F_GOODSID 
+  WHERE A.F_BILLID=:ID 
+  GROUP BY C.F_GOODSCODE 
+---------------
+
+SELECT A.F_PRICEDESC AS 发票费, A.F_INVDAYS AS 发票天数, A.F_QC AS 质量标准, A.F_PACKAGEHINTS AS 包装要求, 
+        A.F_DELIVERYDATE AS 交货时间, A.F_DELIVERYADDR AS 交货地点, A.F_FEEOWNER_ZX AS 装卸承担方, A.F_FEEOWNER_YS AS 运输承担方,  
+        A.F_PRECENT AS 赔偿百分比, A.F_DISP1 AS 仲裁, A.F_DISP2 AS 所在地 
+FROM PUR_ORDERHEAD A 
+WHERE A.F_BILLID = 32201911210008
