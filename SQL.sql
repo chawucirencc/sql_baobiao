@@ -1,3 +1,32 @@
+-- 预制发票(ACC30.采购发票)
+-- 条件
+SELECT A.F_INVID, A.F_INVDATE, A.F_SELLERNAME, A.F_PURCHASERNAME 
+FROM ACC_INVHEAD A 
+WHERE A.F_INVID = :INVID 
+
+-- 采购发票表
+SELECT  CONCAT(" ", A.F_INVID, "\'") AS 发票号码, DATE_FORMAT(A.F_INVDATE, '%%Y-%%m-%%d') AS 发票日期, 
+        CONCAT("公司名称：", A.F_PURCHASERNAME) AS 购方名称, 
+        CONCAT("纳税人识别号：", A.F_PURCHASERREGCODE) AS 购方纳税人识别号, 
+        CONCAT("开票地址：", substring_index(A.F_PURCHASERADDRESS, "0", 1)) AS 购方地址,
+        CONCAT("电话：", RIGHT(A.F_PURCHASERADDRESS, 13)) AS 电话, 
+        CONCAT("开户银行：", substring_index(A.F_PURCHASERBANKINFO, "行", 2), "行") AS 购方开户行,
+        CONCAT("银行账号：", substring_index(A.F_PURCHASERBANKINFO, "行", -1)) AS 银行账号, 
+        A.F_SELLERNAME AS 售方名称, 
+        A.F_SELLERREGCODE AS 售方纳税人识别号, 
+        A.F_SELLERADDRESS AS 售方地址, 
+        A.F_SELLERBANKINFO AS 售方开户行, 
+        B.F_ITEMNAME AS 名称,B.F_ITEMTYPE AS 规格型号, B.F_UNIT AS 单位, B.F_QTY AS 数量, B.F_PRICE AS 单价, 
+        CONVERT(B.F_NETAMT+B.F_TAX, decimal(10,2)) AS 金额, B.F_TAXRATE AS 税率, 
+        CONVERT(B.F_TAX, decimal(10,2)) AS 税额, A.F_REMARK AS 备注, A.F_WORKNO AS 工作号, 
+        DATE_FORMAT(C.F_ACTSHIPDATE, "%%Y-%%m-%%d") AS 装柜日期, A.F_WORKNO 工作号 
+FROM ACC_INVHEAD A  
+LEFT JOIN ACC_INVBODY B ON A.F_INVID = B.F_INVID 
+LEFT JOIN MPS_SOWORKNO C ON A.F_WORKNO = C.F_WORKNO 
+WHERE A.F_INVID=:ID 
+WHERE A.F_INVID=66201911050022
+/*------------------------------------------------------------------------------------------------------------*/
+
 -- 收付款单(ACC31)
 -- 主表
 SELECT A.F_RPID, DATE_FORMAT(A.F_DATE, "%%Y-%%m-%%d") AS 日期, A.F_DEPTID, A.F_CURRENCY, A.F_EXRATE, A.F_SERVICETYPE, 
@@ -7,7 +36,7 @@ FROM ACC_RPBILLHEAD A
 LEFT JOIN ACC_RPBILLBODY B ON A.F_RPID = B.F_RPID 
 WHERE A.F_RPID = :F_RPID 
 -- 收付款单 
--- 表体
+-- 表体 
 SELECT CONCAT(A.F_RPID) AS 单据号, DATE_FORMAT(A.F_DATE, "%%Y-%%m-%%d") AS 日期, A.F_DEPTID AS 部门ID, A.F_DEPTNAME 部门名称, 
         A.F_CURRENCY AS 币种, 
         A.F_EXRATE AS 汇率, A.F_SERVICETYPE AS 发货代码, A.F_WORKNO AS 工作号, A.F_HUBID AS 结算号, 
@@ -78,7 +107,7 @@ FROM ACC_ARPBILLBODY A , (SELECT @rownum := 0) B
 WHERE A.F_ARPID = :ID 
 /*------------------------------------------------------------------------------------------------------------*/
 
--- 明细账
+-- 明细账(暂未做完)
 SELECT A.F_CADATE AS 凭证日期, A.F_CASN AS 凭证号, B.F_SUBJECT AS 凭证摘要, B.F_DRAMT AS 借方金额, B.F_CRAMT AS 贷方金额, 
         F_ACCOUNT AS 科目ID, B.F_ACCOUNTNAME AS 科目名称, C.F_BALANCETYPE AS 余额方向, 
         IF(C.F_BALANCETYPE="1", (B.F_DRAMT-B.F_CRAMT), (B.F_CRAMT-B.F_DRAMT)) AS 余额 
@@ -102,7 +131,7 @@ WHERE B.F_SUBJECTCODE = 1002.01
 -- 采购订单(CG02)
 -- 主表 
 -- 这里遇到了一个比较奇怪的bug，主要是自己没有理解清楚多条记录和表头的关系，两者用不同的逻辑和方法。
--- 原表暂时不用变。
+-- 原表暂时不用变。添加了一些合同里面的字段。
 SELECT A.F_SUPPLIER AS 供应商, DATE_FORMAT(A.F_CREATETIME, '%%Y-%%m-%%d') AS 下单时间, 
 (CASE 
 WHEN A.F_SERVICETYPE='01' THEN '佛山市博亿达进出口有限公司' 
@@ -139,3 +168,6 @@ SELECT A.F_PRICEDESC AS 发票费, A.F_INVDAYS AS 发票天数, A.F_QC AS 质量
         A.F_PRECENT AS 赔偿百分比, A.F_DISP1 AS 仲裁, A.F_DISP2 AS 所在地 
 FROM PUR_ORDERHEAD A 
 WHERE A.F_BILLID = 32201911210008
+/*------------------------------------------------------------------------------------------------------------*/
+
+
