@@ -107,7 +107,7 @@ FROM ACC_ARPBILLBODY A , (SELECT @rownum := 0) B
 WHERE A.F_ARPID = :ID 
 /*------------------------------------------------------------------------------------------------------------*/
 
--- 明细账(暂未做完)
+-- 明细账(暂未做完) V1
 SELECT A.F_CADATE AS 凭证日期, A.F_CASN AS 凭证号, B.F_SUBJECT AS 凭证摘要, B.F_DRAMT AS 借方金额, B.F_CRAMT AS 贷方金额, 
         F_ACCOUNT AS 科目ID, B.F_ACCOUNTNAME AS 科目名称, C.F_BALANCETYPE AS 余额方向, 
         IF(C.F_BALANCETYPE="1", (B.F_DRAMT-B.F_CRAMT), (B.F_CRAMT-B.F_DRAMT)) AS 余额 
@@ -125,10 +125,15 @@ WHERE B.F_ID = 20000016
 SELECT * 
 FROM ACC_CAHEAD A 
 LEFT JOIN BAS_SUBJECTS B ON A.F_COID = B.F_SUBJECTCODE
-WHERE B.F_SUBJECTCODE = 1002.01
+WHERE B.F_SUBJECTCODE = 1002.01 
+
+-----
+-- V2
+SELECT A.F_CADATE AS 凭证日期, A.F_CASN AS 凭证号, B.F_SUBJECT AS 凭证摘要, B.F_DRAMT AS 借方金额, B.F_CRAMT AS 贷方金额, 
+        
 
 /*------------------------------------------------------------------------------------------------------------*/
--- 采购订单(CG02)
+-- 采购订单(CG05)
 -- 主表 
 -- 这里遇到了一个比较奇怪的bug，主要是自己没有理解清楚多条记录和表头的关系，两者用不同的逻辑和方法。
 -- 原表暂时不用变。添加了一些合同里面的字段。
