@@ -167,12 +167,13 @@ SELECT A.F_SUPPLIER AS 供应商, C.F_GOODSMODEL AS 规格,C.F_GOODSTYPENAME AS 
   WHERE A.F_BILLID=:ID 
   GROUP BY C.F_GOODSCODE 
 -------------------------------------------------------------------------------
-
+--合同条款
 SELECT A.F_PRICEDESC AS 发票费, A.F_INVDAYS AS 发票天数, A.F_QC AS 质量标准, A.F_PACKAGEHINTS AS 包装要求, 
         A.F_DELIVERYDATE AS 交货时间, A.F_DELIVERYADDR AS 交货地点, A.F_FEEOWNER_ZX AS 装卸承担方, A.F_FEEOWNER_YS AS 运输承担方,  
-        A.F_PRECENT AS 赔偿百分比, A.F_DISP1 AS 仲裁, A.F_DISP2 AS 所在地 
+        A.F_PRECENT AS 赔偿百分比, A.F_DISP1 AS 仲裁, A.F_DISP2 AS 所在地 , IF(A.F_PAYTYPE='0', '月结', '票结') AS 结算方式, 
+        A.F_BALANCETYPE AS 付款方式
 FROM PUR_ORDERHEAD A 
-WHERE A.F_BILLID = 32201911210008 
+WHERE A.F_BILLID = :ID 
 /*------------------------------------------------------------------------------------------------------------*/
 
 
