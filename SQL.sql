@@ -37,6 +37,7 @@ LEFT JOIN ACC_RPBILLBODY B ON A.F_RPID = B.F_RPID
 WHERE A.F_RPID = :F_RPID 
 -- 收付款单 
 -- 表体 
+-- 金额存在一点问题，应该取表头的金额，发生金额。
 SELECT CONCAT(A.F_RPID) AS 单据号, DATE_FORMAT(A.F_DATE, "%%Y-%%m-%%d") AS 日期, A.F_DEPTID AS 部门ID, A.F_DEPTNAME 部门名称, 
         A.F_CURRENCY AS 币种, 
         A.F_EXRATE AS 汇率, A.F_SERVICETYPE AS 发货代码, A.F_WORKNO AS 工作号, A.F_HUBID AS 结算号, 
@@ -67,6 +68,12 @@ FROM ACC_RPBILLHEAD A
 LEFT JOIN ACC_RPBILLBODY B ON A.F_RPID = B.F_RPID 
 LEFT JOIN DB_ORGS C ON A.F_DEALINGSNAME = C.F_NAME 
 WHERE A.F_RPID = :ID 
+/*------------------------------------------------------------------------------------------------------------*/
+-- 测试
+SELECT A.F_RPID, DATE_FORMAT(A.F_DATE, "%%Y-%%m-%%d") AS 日期, FORMAT(B.F_AMT, 2) AS 金额
+FROM ACC_RPBILLHEAD A 
+LEFT JOIN ACC_RPBILLBODY B ON A.F_RPID = B.F_RPID 
+WHERE A.F_RPID =61201910310029 
 /*------------------------------------------------------------------------------------------------------------*/
 
 --费用报销单(后勤采购)(ACC32)
