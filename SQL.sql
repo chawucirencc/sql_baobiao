@@ -22,11 +22,10 @@ SELECT  CONCAT(" ", A.F_INVID, "\'") AS 发票号码,
         CONVERT(B.F_NETAMT+B.F_TAX, decimal(10,2)) AS 金额, B.F_TAXRATE AS 税率, 
         CONVERT(B.F_TAX, decimal(10,2)) AS 税额, A.F_REMARK AS 备注, A.F_WORKNO AS 工作号, 
         DATE_FORMAT(C.F_ACTSHIPDATE, "%%Y-%%m-%%d") AS 装柜日期, A.F_WORKNO 工作号 
-FROM ACC_INVHEAD A  
+FROM ACC_INVHEAD A 
 LEFT JOIN ACC_INVBODY B ON A.F_INVID = B.F_INVID 
 LEFT JOIN MPS_SOWORKNO C ON A.F_WORKNO = C.F_WORKNO 
 WHERE A.F_INVID=:ID 
-WHERE A.F_INVID=66201911050022
 
 -- 修改
 -- v2.0
@@ -52,6 +51,33 @@ LEFT JOIN MPS_SOWORKNO C ON A.F_WORKNO = C.F_WORKNO
 LEFT JOIN DB_ORGS D ON A.F_PURCHASERNAME = D.F_NAME
 WHERE A.F_INVID=:ID 
 WHERE A.F_INVID=66201911050022
+---------------------
+-- v3.0
+SELECT  CONCAT(" ", A.F_INVID, "\'") AS 发票号码, 
+        DATE_FORMAT(A.F_INVDATE, '%%Y-%%m-%%d') AS 发票日期, 
+        CONCAT("公司名称：", A.F_PURCHASERNAME) AS 购方名称, 
+        CONCAT("纳税人识别号：", A.F_PURCHASERREGCODE) AS 购方纳税人识别号, 
+        CONCAT("开票地址：", substring_index(A.F_PURCHASERADDRESS, "0", 1)) AS 购方地址,
+        CONCAT("电话：", RIGHT(A.F_PURCHASERADDRESS, 13)) AS 电话, 
+        CONCAT("开户银行：", substring_index(A.F_PURCHASERBANKINFO, "行", 2), "行") AS 购方开户行,
+        CONCAT("银行账号：", substring_index(A.F_PURCHASERBANKINFO, "行", -1)) AS 银行账号, 
+        A.F_SELLERNAME AS 售方名称, 
+        A.F_SELLERREGCODE AS 售方纳税人识别号, 
+        A.F_SELLERADDRESS AS 售方地址, 
+        A.F_SELLERBANKINFO AS 售方开户行, 
+        B.F_ITEMNAME AS 名称,B.F_ITEMTYPE AS 规格型号, B.F_UNIT AS 单位, B.F_QTY AS 数量, B.F_PRICE AS 单价, 
+        CONVERT(B.F_NETAMT+B.F_TAX, decimal(10,2)) AS 金额, B.F_TAXRATE AS 税率, 
+        CONVERT(B.F_TAX, decimal(10,2)) AS 税额, A.F_REMARK AS 备注, A.F_WORKNO AS 工作号, 
+        DATE_FORMAT(C.F_ACTSHIPDATE, "%%Y-%%m-%%d") AS 装柜日期, A.F_WORKNO 工作号 
+FROM ACC_INVHEAD A  
+LEFT JOIN ACC_INVBODY B ON A.F_INVID = B.F_INVID 
+LEFT JOIN MPS_SOWORKNO C ON A.F_WORKNO = C.F_WORKNO 
+LEFT JOIN BAS_HSGOODS D ON C.F_ID = D.F_HSGOODSID 
+WHERE A.F_INVID=:ID 
+GROUP BY A.F_SELLERNAME, B.F_ITEMTYPE, B.F_ITEMNAME, D.F_HSGOODSCNAME, B.F_PRICE 
+WHERE A.F_INVID=66201911050022 
+
+--------------------------------------------------------------------
 
 D.F_ADDRESS AS 中文地址, D.F_TEL AS 联系电话, D.F_BANK AS 开户银行, D.F_BANKACCOUNT AS 银行账户, D.F_TAXCODE AS 税务代码
 LEFT JOIN DB_ORGS D ON A.F_PURCHASERNAME = D.F_NAME 
