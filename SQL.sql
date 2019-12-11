@@ -412,8 +412,9 @@ AND (:采购部门='' OR F_DEPTNAME LIKE CONCAT('%',:采购部门,'%'))
 AND (:供应商='' OR C.F_SNAME LIKE CONCAT('%',:供应商,'%')) 
 ORDER BY F_DEPTNAME,F_CURRENCY,总金额 DESC 
 
--- 2.0
-SELECT B.F_ROOTID, A.F_ORGNAME, 
+-- 2.0 
+-- 如果按区域汇总，对国家进行分组，对金额进行汇总SUM.
+SELECT B.F_ROOTID, A.F_ORGNAME, B.F_NAME,
 CASE 
 WHEN B.F_ROOTID='1000' THEN '中国' 
 WHEN B.F_ROOTID='2000' THEN '坦桑'
@@ -428,4 +429,18 @@ B.F_ACCOUNTNAME, A.F_DATE, A.F_ORGNAME, B.F_BANKACCOUNT, A.F_CURRENCY, A.F_AMT, 
 A.F_NETAMT, A.F_EXRATE, A.F_NETAMT_USD, (A.F_NETAMT_USD/10000) AS 万美元, A.F_REMARK 
 FROM DB_ORGS B 
 LEFT JOIN FC_ACCLOG A ON A.F_ORGNAME = B.F_NAME 
-WHERE A.F_STATUS = 1
+WHERE A.F_STATUS = 1 
+
+AND AND A.F_DATE>=:START_DATE AND A.F_DATE<=:END_DATE
+AND (:银行账号名称=' ' OR A.F_ORGNAME LIKE CONCAT('%',:银行账号名称,'%'))
+
+
+-- 发货查看，
+SELECT A.F_WORKNO AS 工作号, A.F_APPROVETIME AS 审核日期, 
+        A.F_SENDNAME AS 发货人, A.F_RECVNAME AS 收货人, A.F_STATUS AS 状态 
+FROM MPS_SOWORKNO A 
+WHERE A.F_STATUS >= 5 
+
+-- 单据状态
+dicts.C_BillStatus = [["0", "草稿"], ["1", "待确认"], ["2", "待预审"], ["3", "待审核"], ["4", "待批准"], 
+                        ["5", "已批准"], ["6", "已结算"], ["8", "已结案"], ["9", "已终止"]]; 
