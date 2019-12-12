@@ -434,13 +434,79 @@ WHERE A.F_STATUS = 1
 AND AND A.F_DATE>=:START_DATE AND A.F_DATE<=:END_DATE
 AND (:银行账号名称=' ' OR A.F_ORGNAME LIKE CONCAT('%',:银行账号名称,'%'))
 
+国家=国家,DB_USERS.F_ORGID,
+
 
 -- 发货查看，
 SELECT A.F_WORKNO AS 工作号, A.F_APPROVETIME AS 审核日期, 
         A.F_SENDNAME AS 发货人, A.F_RECVNAME AS 收货人, A.F_STATUS AS 状态 
 FROM MPS_SOWORKNO A 
 WHERE A.F_STATUS >= 5 
+AND A.F_APPROVETIME>=:START_DATE AND A.F_APPROVETIME<=:END_DATE 
+AND (:工作号=' ' OR A.F_WORKNO LIKE CONCAT('%',:工作号,'%'))
+AND (:发货人=' ' OR A.F_SENDNAME LIKE CONCAT('%',:发货人,'%'))
+AND (:收货人=' ' OR A.F_RECVNAME LIKE CONCAT('%',:收货人,'%'))
 
 -- 单据状态
 dicts.C_BillStatus = [["0", "草稿"], ["1", "待确认"], ["2", "待预审"], ["3", "待审核"], ["4", "待批准"], 
                         ["5", "已批准"], ["6", "已结算"], ["8", "已结案"], ["9", "已终止"]]; 
+
+
+-- 肯尼亚财务(TT05-4)
+SELECT CONCAT(B.F_ARPID,'_') AS 单据编号,B.F_STATUS,DATE_FORMAT(B.F_DATE,'%%Y-%%m-%%d') AS 业务日期,
+DATE_FORMAT(B.F_CHECKDATE,'%%Y-%%m-%%d')  AS  审核日期,B.F_WORKNO AS 工作号,B.F_SERVICETYPE AS 发货代码,
+IFNULL(A.F_ITEMNAME,1) AS 费用名称,C.F_SNAME AS 供应商,
+ (CASE WHEN B.F_SETTLETYPE=0 THEN '月结' WHEN B.F_SETTLETYPE=1 THEN '票结'  ELSE ' ' END) AS 结算方式,B.F_CURRENCYID AS 币种,
+B.F_CURRENCY,B.F_EXRATE AS 汇率,A.F_AMT AS 金额,B.F_EXRATE*A.F_AMT AS 金额RMB,
+A.F_REMARK AS 费项明细备注 ,B.F_REMARK AS 单据总备注,B.F_USAGE,B.F_DEPTNAME AS 部门,B.F_EMPNAME 
+FROM ACC_ARPBILLBODY A
+JOIN   ACC_ARPBILLHEAD B ON B.F_ARPID=A.F_ARPID
+JOIN DB_ORGS C ON C.F_ID=B.F_DEALINGSID
+WHERE B.F_STATUS>=2   AND A.F_AMT>0  
+AND B.F_DATE>='2018-12-01'
+AND B.F_DATE>=:START_DATE  AND  B.F_DATE<=DATE_ADD(:END_DATE,interval 1 day)
+AND (:工作号='' OR B.F_WORKNO LIKE CONCAT('%',:工作号,'%')) 
+AND ( :费用名称=''  OR A.F_ITEMNAME  LIKE CONCAT('%',:费用名称,'%'))
+AND B.F_CI=4000 OR B.F_CI=1000
+ORDER BY  B.F_WORKNO,B.F_DATE 
+/*---------------------------------------------------------------------------*/
+-- 参数
+showFields=单据编号,F_STATUS,业务日期,审核日期,工作号,发货代码,费用名称,供应商,结算方式,F_CURRENCY,汇率,金额,费项明细备注,
+单据总备注,F_USAGE,部门,F_EMPNAME
+columns=
+ 发货代码=发货代码,,70
+ 业务日期=业务日期,,110
+ 供应商=供应商,,180
+ 工作号=工作号,,150
+ 结算方式=结算方式,,65
+ F_CURRENCY=币别,,65
+ 汇率=汇率,,65
+ 金额=金额,INV_CHANGEBODY.F_AMT,120
+  金额RMB=金额RMB,INV_CHANGEBODY.F_AMT,120
+ 费项表体备注=费项表体备注,,180
+ 单据表头备注=单据表头备注,,180
+ F_STATUS=单据状态,ACC_ARPBILLHEAD.F_STATUS,
+
+sumFields=金额,金额RMB
+rowNumber=1
+
+/*---------------------------------------------------------------------------*/
+-- 国内财务（TT05）
+SELECT CONCAT(B.F_ARPID,'_') AS 单据编号,B.F_STATUS,DATE_FORMAT(B.F_DATE,'%%Y-%%m-%%d') AS 业务日期,
+B.F_WORKNO AS 工作号,B.F_SERVICETYPE AS 发货代码,
+IFNULL(A.F_ITEMNAME,1) AS 费用名称,C.F_SNAME AS 供应商,
+ (CASE WHEN B.F_SETTLETYPE=0 THEN '月结' WHEN B.F_SETTLETYPE=1 THEN '票结'  ELSE ' ' END) AS 结算方式,B.F_CURRENCYID AS 币种,
+B.F_CURRENCY,B.F_EXRATE AS 汇率,A.F_AMT AS 金额,B.F_EXRATE*A.F_AMT AS 金额RMB,
+A.F_REMARK AS 费项明细备注 ,B.F_REMARK AS 单据总备注,B.F_USAGE,B.F_DEPTNAME AS 部门,B.F_EMPNAME 
+FROM ACC_ARPBILLBODY A
+JOIN   ACC_ARPBILLHEAD B ON B.F_ARPID=A.F_ARPID
+JOIN DB_ORGS C ON C.F_ID=B.F_DEALINGSID
+WHERE B.F_STATUS>=2 AND B.F_BILLTYPE=2 AND B.F_SOURCETYPE=2 AND A.F_AMT>0  
+AND B.F_DATE>='2018-12-01'
+AND  B.F_DATE>=:START_DATE  AND  B.F_DATE<=DATE_ADD(:END_DATE,interval 1 day)
+AND (:工作号='' OR B.F_WORKNO LIKE CONCAT('%',:工作号,'%'))   
+AND (:费用名称=''  OR A.F_ITEMNAME  LIKE CONCAT('%',:费用名称,'%'))
+AND (:供应商='' OR C.F_SNAME LIKE CONCAT('%',:供应商,'%'))
+AND B.F_CI=1000
+ORDER BY  B.F_WORKNO,B.F_DATE 
+
