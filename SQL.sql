@@ -343,7 +343,30 @@ AND (:国家标识=' ' OR B.F_CI=:国家标识)
 AND (:银行账号名称=' ' OR A.F_ORGNAME LIKE CONCAT('%',:银行账号名称,'%')) 
 ORDER BY 国家 
 
+/*---------------------------------------------------------------------------*/
+-- 资金查看（ACC38）
+SELECT B.F_ROOTID, B.F_CI AS 国家标识, CASE
+WHEN B.F_CI='1000' THEN '中国' 
+WHEN B.F_CI='2000' THEN '坦桑'
+WHEN B.F_CI='3000' THEN '南非'
+WHEN B.F_CI='4000' THEN '肯尼亚'
+WHEN B.F_CI='5000' THEN '莫桑楠普拉'
+WHEN B.F_CI='6000' THEN '中国香港'
+WHEN B.F_CI='7000' THEN '莫桑马普托'
+WHEN B.F_CI='20000437' THEN '加纳'
+WHEN B.F_CI='20000438' THEN '尼日利亚' 
+END AS 国家,
+B.F_ACCOUNTNAME, A.F_DATE, 
+SUM((A.F_AMT/A.F_EXRATE/10000)) as AMT, 
+A.F_EXRATE, 
+SUM((A.F_NETAMT_USD/10000)) AS 万美元
+FROM FC_ACCLOG A 
+LEFT JOIN DB_ORGS B ON A.F_ORGID = B.F_ID 
+WHERE A.F_STATUS = 1 
+AND (:国家标识=' ' OR B.F_CI=:国家标识) 
+GROUP BY B.F_ACCOUNTNAME
 
+/*---------------------------------------------------------------------------*/
 -- 发货统计（ACC36）
 SELECT A.F_WORKNO AS 工作号, A.F_APPROVETIME AS 审核日期, 
         A.F_SENDNAME AS 发货人, A.F_RECVNAME AS 收货人, A.F_STATUS AS 状态 
@@ -360,7 +383,7 @@ dicts.C_BillStatus = [["0", "草稿"], ["1", "待确认"], ["2", "待预审"], [
 
 dicts.C_ACC_BILLTYPE=[['1', '应收'], ['2', '应付'], ['3', '费用']];
 
-//来源单费用类型		
+-- //来源单费用类型		
 dicts.C_SOURCEBILLTYPE=[
 	['1', '清关费用'], 
 	['2', '单证费用'], 
@@ -433,3 +456,5 @@ AND (:费用名称=''  OR A.F_ITEMNAME  LIKE CONCAT('%',:费用名称,'%'))
 AND (:供应商='' OR C.F_SNAME LIKE CONCAT('%',:供应商,'%'))
 AND B.F_CI=1000
 ORDER BY  B.F_WORKNO,B.F_DATE 
+
+/*---------------------------------------------------------------------------*/
