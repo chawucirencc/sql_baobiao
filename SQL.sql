@@ -345,7 +345,8 @@ ORDER BY 国家
 
 /*---------------------------------------------------------------------------*/
 -- 资金查看（ACC38）
-SELECT B.F_ROOTID, B.F_CI AS 国家标识, CASE
+SELECT B.F_ROOTID, B.F_CI AS 国家标识, 
+CASE
 WHEN B.F_CI='1000' THEN '中国' 
 WHEN B.F_CI='2000' THEN '坦桑'
 WHEN B.F_CI='3000' THEN '南非'
@@ -364,7 +365,7 @@ FROM FC_ACCLOG A
 LEFT JOIN DB_ORGS B ON A.F_ORGID = B.F_ID 
 WHERE A.F_STATUS = 1 
 AND (:国家标识=' ' OR B.F_CI=:国家标识) 
-GROUP BY B.F_ACCOUNTNAME
+GROUP BY B.F_ACCOUNTNAME,国家
 
 /*---------------------------------------------------------------------------*/
 -- 发货统计（ACC36）
@@ -376,14 +377,26 @@ AND A.F_APPROVETIME>=:START_DATE AND A.F_APPROVETIME<=:END_DATE
 AND (:工作号=' ' OR A.F_WORKNO LIKE CONCAT('%',:工作号,'%'))
 AND (:发货人=' ' OR A.F_SENDNAME LIKE CONCAT('%',:发货人,'%'))
 AND (:收货人=' ' OR A.F_RECVNAME LIKE CONCAT('%',:收货人,'%'))
+-- 
+-- V2.0
+SELECT A.F_ORGNAME AS 需求组织, A.F_WORKNO AS 工作号, A.F_APPROVETIME AS 审核日期,D.F_NAME, 
+A.F_SENDNAME AS 发货人,A.F_RECVNAME AS 收货人,A.F_STATUS AS 状态,
+B.F_REPORTCODE, B.F_REPORTNAME,B.F_SOURCEID,C.F_SOURCEID,C.F_SERVICETYPE
 
+FROM MPS_SOWORKNO A  
+LEFT JOIN DOC_HEAD B ON A.F_WORKNO=B.F_WORKNO 
+LEFT JOIN DB_ORGS C ON B.F_SERVICETYPE=C.F_SERVICETYPE
+WHERE A.F_STATUS >= 5 
+AND B.F_REPORTCODE='BG04'
+
+/*---------------------------------------------------------------------------*/
 -- 单据状态
 dicts.C_BillStatus = [["0", "草稿"], ["1", "待确认"], ["2", "待预审"], ["3", "待审核"], ["4", "待批准"], 
                         ["5", "已批准"], ["6", "已结算"], ["8", "已结案"], ["9", "已终止"]]; 
 
 dicts.C_ACC_BILLTYPE=[['1', '应收'], ['2', '应付'], ['3', '费用']];
 
--- //来源单费用类型		
+-- //来源单费用类型 
 dicts.C_SOURCEBILLTYPE=[
 	['1', '清关费用'], 
 	['2', '单证费用'], 
@@ -414,7 +427,7 @@ AND B.F_DATE>='2018-12-01'
 AND B.F_DATE>=:START_DATE  AND  B.F_DATE<=DATE_ADD(:END_DATE,interval 1 day)
 AND (:工作号='' OR B.F_WORKNO LIKE CONCAT('%',:工作号,'%')) 
 AND ( :费用名称=''  OR A.F_ITEMNAME  LIKE CONCAT('%',:费用名称,'%'))
-AND B.F_CI=4000 OR B.F_CI=1000
+AND B.F_CI=4000 OR B.F_CI=1000 
 ORDER BY  B.F_WORKNO,B.F_DATE 
 /*---------------------------------------------------------------------------*/
 -- 参数
@@ -458,3 +471,8 @@ AND B.F_CI=1000
 ORDER BY  B.F_WORKNO,B.F_DATE 
 
 /*---------------------------------------------------------------------------*/
+
+SELECT * 
+FROM DOC_HEAD 
+WHERE  F_WORKNO = 'UR1912NS002'
+AND F_REPORTCODE='BG04'
