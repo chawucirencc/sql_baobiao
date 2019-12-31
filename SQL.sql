@@ -644,6 +644,7 @@ columns=
   付款金额=付款金额(借方),INV_CHANGEHEAD.F_AMT,
   余额=余额,INV_CHANGEHEAD.F_AMT,
 sumFields=应付金额,付款金额
+/*---------------------------------------------------------------------------*/
 
 -- 应付余额表（应付费用）ACC43
 SELECT A.SERVICETYPE AS 发货代码, IF(A.F_BILLTYPE='YF', '应付费用', '付款单') AS 单据类型, A.F_BILLID AS 单号, 
@@ -675,6 +676,7 @@ AND (F_SERVICETYPE=:P_SERVICETYPE)
 AND F_DATE>=:START_DATE AND F_DATE<=DATE_ADD(:END_DATE, INTERVAL 1 DAY)
 ) A, (SELECT @BAL:=0) B 
 ORDER BY A.F_BILLID,A.F_DATE,A.F_WORKNO 
+/*---------------------------------------------------------------------------*/
 
 -- TT05 费用明细表
 SELECT CONCAT(B.F_ARPID,'_') AS 单据编号,B.F_STATUS,DATE_FORMAT(B.F_DATE,'%%Y-%%m-%%d') AS 业务日期,B.F_WORKNO AS 工作号,B.F_SERVICETYPE AS 发货代码,
@@ -695,3 +697,25 @@ AND (:供应商='' OR C.F_SNAME LIKE CONCAT('%',:供应商,'%'))
 AND B.F_CI=1000 
 ORDER BY  B.F_WORKNO,B.F_DATE 
 
+
+/*---------------------------------------------------------------------------*/
+-- 主表
+SELECT A.F_WORKNO AS 工作号, A.F_DATE AS 日期, A.F_DEALINGSNAME, A.F_AMT AS 总金额, 
+        IF(B.F_SNAME IS NULL, A.F_DEALINGSNAME, B.F_SNAME) AS 供应商,
+        A.F_SERVICETYPE AS 发货代码, B.F_SNAME, C.F_NAME 起运地, D.F_INVOICENO AS 发票号,
+        CONCAT(LEFT(F_DATE, 4),'.01-', LEFT(F_DATE, 4), '.12') AS 作业日期
+FROM ACC_ARPBILLHEAD A
+LEFT JOIN DB_ORGS B ON A.F_DEALINGSNAME=B.F_NAME
+LEFT JOIN DB_ORGS C ON C.F_SERVICETYPE=A.F_SERVICETYPE
+LEFT JOIN MPS_SOWORKNO D ON A.F_WORKNO=D.F_WORKNO
+WHERE F_ARPID=:ID
+AND A.F_BILLTYPE='2'
+
+-- 明细
+SELECT B.F_ITEMNAME AS 费用名称, A.F_CURRENCY AS 币别, B.F_AMT AS 金额
+FROM ACC_ARPBILLHEAD A 
+LEFT JOIN ACC_ARPBILLBODY B ON A.F_ARPID=B.F_ARPID 
+WHERE A.F_BILLTYPE='2'
+AND B.F_AMT IS NOT NULL
+AND B.F_AMT <> ''
+AND A.F_ARPID=:ID
