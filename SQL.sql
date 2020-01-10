@@ -857,6 +857,7 @@ AND A.F_SERVICETYPE = :P_SERVICETYPE
 
 UNION 
 --------------------------------------------------------------------------------
+-- 按供应商应付余额表
 SELECT C.P_SERVICETYPE AS 发货代码, C. P_NAME AS 供应商, IF(D.F_SNAME IS NULL, C.P_NAME, D.F_SNAME) AS 供应商全称, 
 SUM(C.P_APAMT) AS 应付金额（贷方）, SUM(C.P_PAMT) AS 付款金额（借方）, (SUM(C.P_APAMT)-SUM(C.P_PAMT)) AS 余额
 FROM 
